@@ -92,8 +92,15 @@ class Service:
           - backup_count
           - last_backup_datetime
         """
+        if not settings.backup_dir:
+            raise BackupException("Backup directory not configured")
         if not os.path.exists(settings.backup_dir):
-            raise BackupException("Missing directory " + settings.backup_dir)
+            raise BackupException(
+                f"Backup directory does not exist: {settings.backup_dir}. "
+                f"This may happen if the path is from a different operating system. "
+                f"Please update your backup directory in Settings, or use the "
+                f"'Reset Backup Directory' option to restore the default."
+            )
 
         # def _print_now(msg):
         #     "Timing helper for when implement audio backup."
@@ -186,8 +193,22 @@ class Service:
 
     def list_backups(self, outdir) -> List[DatabaseBackupFile]:
         "List all backup files."
-        return [
-            DatabaseBackupFile(os.path.join(outdir, f))
-            for f in os.listdir(outdir)
-            if re.match(r"(manual_)?lute_backup_", f)
-        ]
+        # If outdir isn't set or doesn't exist, return empty list instead of
+        # raising FileNotFoundError. This prevents the web UI from returning
+        # a 500 error when a user setting points to a path that is invalid
+        # on the running platform (for example a Windows path inside Linux
+        # Docker container).
+        if not outdir:
+            return []
+        if not os.path.exists(outdir):
+            return []
+
+        files: List[DatabaseBackupFile] = []
+        for f in os.listdir(outdir):
+            if re.match(r"(manual_)?lute_backup_", f):
+                try:
+                    files.append(DatabaseBackupFile(os.path.join(outdir, f)))
+                except BackupException:
+                    # Skip files that don't validate as backup files.
+                    continue
+        return files

@@ -37,11 +37,33 @@ def index():
     """
     settings = _get_settings()
     service = Service(db.session)
-    backups = service.list_backups(settings.backup_dir)
-    backups.sort(reverse=True)
+
+    # Protect against invalid backup_dir values (eg. Windows path inside
+    # a Linux container). If the directory doesn't exist, show the page
+    # with an empty list and a helpful message instead of failing with
+    # FileNotFoundError.
+    backups = []
+    backup_error = None
+    if not settings.backup_dir:
+        backup_error = (
+            "No backup directory configured. Please set one in Settings."
+        )
+    elif not os.path.exists(settings.backup_dir):
+        backup_error = (
+            f"Backup directory does not exist: {settings.backup_dir}. "
+            "This often happens when a Windows path is used in a Linux container, "
+            "or when the directory has been moved. "
+            "Please update your backup directory in Settings."
+        )
+    else:
+        backups = service.list_backups(settings.backup_dir)
+        backups.sort(reverse=True)
 
     return render_template(
-        "backup/index.html", backup_dir=settings.backup_dir, backups=backups
+        "backup/index.html",
+        backup_dir=settings.backup_dir,
+        backups=backups,
+        backup_error=backup_error,
     )
 
 
@@ -49,7 +71,11 @@ def index():
 def download_backup(filename):
     "Download the given backup file."
     settings = _get_settings()
+    if not settings.backup_dir:
+        return (jsonify({"errmsg": "No backup directory configured."}), 404)
     fullpath = os.path.join(settings.backup_dir, filename)
+    if not os.path.exists(fullpath):
+        return (jsonify({"errmsg": f"Backup file not found: {filename}"}), 404)
     return send_file(fullpath, as_attachment=True)
 
 

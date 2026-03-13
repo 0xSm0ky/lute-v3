@@ -149,3 +149,27 @@ def edit_shortcuts():
         setting_descs=hotkey_descriptions(),
         categorized_settings=categorized_settings,
     )
+
+
+@bp.route("/reset_backup_dir", methods=["POST"])
+def reset_backup_dir():
+    """
+    Reset backup directory to the default.
+    
+    This is useful when a user has set a Windows path in a Linux container,
+    or another invalid path configuration. Returns to the configured default.
+    """
+    repo = UserSettingRepository(db.session)
+    ac = current_app.env_config
+    try:
+        repo.set_value("backup_dir", ac.default_user_backup_path)
+        db.session.commit()
+        refresh_global_settings(db.session)
+        result = {
+            "result": "success",
+            "message": f"Backup directory reset to {ac.default_user_backup_path}",
+        }
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        message = f"{type(e).__name__}: {str(e)}"
+        result = {"result": "failure", "message": message}
+    return jsonify(result)

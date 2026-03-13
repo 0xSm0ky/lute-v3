@@ -6,7 +6,33 @@
 
 {% block body %}
 
-{% if backups|length == 0 %}
+{% if backup_error %}
+  <div style="background-color: #ffcccc; border: 1px solid #ff6666; padding: 10px; margin-bottom: 20px; border-radius: 4px;">
+    <p style="color: #cc0000; margin: 0;"><strong>Error:</strong> {{ backup_error }}</p>
+  </div>
+  <p>
+    <button onclick="resetBackupDir()" style="padding: 8px 12px; background-color: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer;">
+      Reset to Default
+    </button>
+  </p>
+  <script>
+    function resetBackupDir() {
+      if (confirm('Reset backup directory to default? Current setting: ' + '{{ backup_dir }}')) {
+        fetch('/settings/reset_backup_dir', { method: 'POST' })
+          .then(r => r.json())
+          .then(d => {
+            if (d.result === 'success') {
+              alert('Backup directory reset to: ' + d.message.split('to ')[1]);
+              location.reload();
+            } else {
+              alert('Error: ' + d.message);
+            }
+          })
+          .catch(e => alert('Error: ' + e));
+      }
+    }
+  </script>
+{% elif backups|length == 0 %}
   <p>No backups have been made yet.</p>
 {% else %}
 
@@ -37,6 +63,8 @@
 {% endif %}
 
 <br />
-<a href="{{ url_for('backup.backup', type='manual') }}">Create new</a>
+{% if not backup_error %}
+  <a href="{{ url_for('backup.backup', type='manual') }}">Create new</a>
+{% endif %}
 
 {% endblock %}
