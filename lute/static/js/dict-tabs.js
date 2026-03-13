@@ -272,6 +272,129 @@ class DictButton extends LookupButton {
 
 
 /**
+ * TermFrameButton - optimized for mobile displays
+ * Extends LookupButton to provide better mobile UX with
+ * touch-friendly sizing and responsive behavior.
+ */
+class TermFrameButton extends LookupButton {
+  constructor(dictURL, frameName) {
+    super(frameName);
+    this.dictID = LookupButton.TERM_DICTS.indexOf(dictURL);
+    if (this.dictID == -1) {
+      console.log(`Error: Dict url ${dictURL} not found (??)`);
+      return;
+    }
+
+    const url = dictURL.split("*").splice(-1)[0];
+    this.label = (url.length <= 10) ? url : (url.slice(0, 10) + '...');
+    this.isExternal = (dictURL.charAt(0) == '*');
+
+    // Better mobile sizing
+    this.btn.style.minHeight = '44px';
+    this.btn.style.padding = '0.5rem';
+    
+    // Get icon and label for real URLs
+    let fimg = null;
+    try {
+      const urlObj = new URL(url);
+      const domain = urlObj.hostname;
+      this.label = domain.split("www.").splice(-1)[0];
+
+      fimg = document.createElement("img");
+      fimg.classList.add("dict-btn-fav-img");
+      const favicon_src = `http://www.google.com/s2/favicons?domain=${domain}`;
+      fimg.src = favicon_src;
+    }
+    catch(err) {}
+
+    this.btn.textContent = this.label;
+
+    if (fimg != null)
+      this.btn.prepend(fimg);
+
+    this.btn.setAttribute("title", this.label);
+
+    if (this.isExternal) {
+      const ext_img = document.createElement("img");
+      ext_img.classList.add("dict-btn-external-img");
+      this.btn.classList.add("dict-btn-external");
+      this.btn.appendChild(ext_img);
+    }
+
+    // Ensure better touch target on mobile
+    this.btn.addEventListener('touchstart', () => {
+      this.btn.style.opacity = '0.8';
+    });
+    this.btn.addEventListener('touchend', () => {
+      this.btn.style.opacity = '1';
+    });
+  }
+
+  do_lookup() {
+    const dicturl = LookupButton.TERM_DICTS[this.dictID];
+    if (LookupButton.TERM_FORM_CONTAINER == null || dicturl == null)
+      return;
+    const term = LookupButton.TERM_FORM_CONTAINER.querySelector("#text").value;
+    if (this.isExternal) {
+      this._load_popup(dicturl, term);
+    }
+    else {
+      this._load_frame(dicturl, term);
+    }
+    this.activate();
+  }
+
+  _get_lookup_url(dicturl, term) {
+    let ret = dicturl;
+    const zeroWidthSpace = '\u200b';
+    const sqlZWS = '%E2%80%8B';
+    const cleantext = term.
+          replaceAll(zeroWidthSpace, '').
+          replace(/\s+/g, ' ');
+    const searchterm = encodeURIComponent(cleantext).
+          replaceAll(sqlZWS, '');
+    ret = ret.replace('[LUTE]', searchterm);
+    ret = ret.replace('###', searchterm);
+    return ret;
+  }
+
+  _load_popup(url, term) {
+    if ((url ?? "") == "")
+      return;
+    if (url[0] == "*")
+      url = url.slice(1);
+    const lookup_url = this._get_lookup_url(url, term);
+    let settings = 'width=800, height=600, scrollbars=yes, menubar=no, resizable=yes, status=no'
+    if (LUTE_USER_SETTINGS.open_popup_in_new_tab)
+      settings = null;
+    window.open(lookup_url, 'otherwin', settings);
+  }
+
+  _load_frame(dicturl, text) {
+    if (this.isExternal || this.dictID == null) {
+      return;
+    }
+    if (this.contentLoaded) {
+      console.log(`${this.label} content already loaded.`);
+      return;
+    }
+
+    let url = this._get_lookup_url(dicturl, text);
+
+    const is_bing_image_search = (dicturl.indexOf('www.bing.com/images') != -1);
+    if (is_bing_image_search) {
+      let use_text = text;
+      const binghash = dicturl.replace('https://www.bing.com/images/search?', '');
+      url = `/bing/search/${LookupButton.LANG_ID}/${encodeURIComponent(use_text)}/${encodeURIComponent(binghash)}`;
+    }
+
+    this.frame.setAttribute("src", url);
+    this.contentLoaded = true;
+  }
+}
+
+
+/**
  * Load excess buttons in a separate div.
  */
 function _create_dict_dropdown_div(buttons_in_list) {

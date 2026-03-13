@@ -878,6 +878,12 @@ img
     border-bottom: 1px solid red !important;
 }
 
+.touch-active {
+    background-color: rgba(173, 216, 230, 0.5) !important;
+    border-radius: 3px;
+    transition: background-color 0.15s ease;
+}
+
 .newmultiterm
 {
     background: yellow !important;
@@ -2331,3 +2337,278 @@ div#termimagesearch span.imageAction:hover {
     color: #C00000;
     cursor: pointer;
 }
+
+/* ====== ENHANCED MOBILE UI IMPROVEMENTS ====== */
+
+@media screen and (max-width: 980px) {
+    /* Improve mobile button sizing for touch targets */
+    .dict-btn {
+        min-height: 44px;
+        min-width: 44px;
+        padding: 0.5rem;
+        font-size: 0.95rem;
+        border-radius: 5px;
+    }
+
+    /* Better spacing for mobile dictionaries */
+    #dicttabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        padding: 0.5rem;
+        background-color: #dbefff;
+        border-bottom: 1px solid #85c0ee;
+    }
+
+    #dicttabslayout {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        width: 100%;
+    }
+
+    /* Mobile-optimized dict button layout */
+    .dict-btn-fav-img {
+        height: 50%;
+        margin-right: 0.3rem;
+    }
+
+    /* Improve touch targets for dict buttons */
+    .dict-btn:not(.dict-btn-active):not(.dict-btn.dict-btn-external):hover,
+    .dict-btn:not(.dict-btn-active):hover {
+        transform: scale(1.05);
+        transition: transform 0.2s ease;
+    }
+
+    /* Better mobile form styling */
+    #term-form-container {
+        padding: 1rem;
+        padding-bottom: 0.5rem;
+    }
+
+    /* Improve text input sizing on mobile */
+    #text,
+    #translation,
+    #romanization {
+        font-size: 16px; /* Prevents zoom on iOS */
+        padding: 0.75rem;
+    }
+
+    /* Mobile-friendly dropdown */
+    #dict-menu-container {
+        position: relative;
+        margin-left: auto;
+    }
+
+    /* Better mobile status display */
+    #status-container {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    /* Mobile bottom pane improvements */
+    #read_pane_right {
+        border-radius: 15px 15px 0 0;
+    }
+
+    .dictcontainer {
+        display: flex;
+        flex-direction: column;
+        overflow: auto;
+        max-height: calc(100vh - 200px);
+    }
+
+    /* Improve dictionary frame sizing on mobile */
+    #dictframes {
+        flex: 1;
+        min-height: 200px;
+        overflow-y: auto;
+    }
+
+    .dictframe {
+        min-height: 200px;
+        width: 100%;
+    }
+
+    /* Better wordframe sizing on mobile */
+    .wordframecontainer {
+        min-height: 200px;
+        overflow: auto;
+    }
+
+    .rightreadingframe {
+        min-height: 200px !important;
+    }
+
+    /* Improve button visibility on mobile */
+    .dict-btn-select {
+        background-color: #dcebf8;
+        border: 1px solid #85c0ee;
+    }
+
+    /* Better mobile text rendering */
+    div#thetext {
+        font-size: 1.1rem;
+        line-height: 1.6;
+    }
+
+    /* Improve mobile menu styling */
+    .reading-menu-item {
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+    }
+
+    /* Better spacing for mobile controls */
+    .reading_header_container {
+        gap: 0.75rem;
+    }
+
+    /* Mobile-optimized form labels */
+    label {
+        font-size: 0.95rem;
+        margin-bottom: 0.25rem;
+    }
+
+    /* Improve mobile input fields */
+    input[type="text"],
+    input[type="password"],
+    input[type="email"],
+    select,
+    textarea {
+        border-radius: 5px;
+        border: 1px solid #ddd;
+    }
+
+    /* Better mobile button styling */
+    button {
+        border-radius: 5px;
+        transition: all 0.2s ease;
+    }
+
+    button:active {
+        transform: scale(0.98);
+    }
+
+    /* Mobile-optimized term form */
+    #term-button-container {
+        gap: 0.5rem;
+    }
+
+    #term-button-container button {
+        flex: 1;
+        min-height: 44px;
+        font-size: 1rem;
+    }
+
+    /* Better mobile translation display */
+    #translation-container {
+        gap: 0.5rem;
+    }
+
+    /* Improve mobile tag styling */
+    .tagify {
+        border-radius: 5px;
+        min-height: 44px;
+    }
+
+    /* Better mobile image sizing */
+    .zoomableTermImage {
+        max-width: 100px;
+        border-radius: 5px;
+    }
+
+    /* Mobile-optimized close button */
+    .read-pane-right-close-btn {
+        z-index: 1004;
+        opacity: 0.9;
+    }
+
+    .read-pane-right-close-btn:active {
+        opacity: 1;
+    }
+}
+
+/* Ultra-small screen optimizations */
+@media screen and (max-width: 480px) {
+    #reading-header {
+        height: 3.5rem;
+    }
+
+    #read_pane_left {
+        margin-top: 3.5rem;
+    }
+
+    .reading_header_mid_top {
+        margin-left: 1rem;
+        margin-right: 1rem;
+    }
+
+    #thetexttitle,
+    div#thetext {
+        padding: 0 0.5rem;
+    }
+
+    .dict-btn {
+        font-size: 0.85rem;
+        padding: 0.4rem;
+    }
+
+    #term-form-container {
+        padding: 0.75rem;
+    }
+
+    #text,
+    #translation,
+    #romanization {
+        font-size: 16px;
+        padding: 0.5rem;
+    }
+
+    .reading-menu-item {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.9rem;
+    }
+
+    .dictcontainer {
+        max-height: calc(100vh - 150px);
+    }
+
+    label {
+        font-size: 0.85rem;
+    }
+
+    /* Mobile bottom navigation styling */
+    .mobile-bottom-nav {
+        display: flex !important;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0.75rem;
+        background-color: #f0f0f0;
+        border-top: 1px solid #ddd;
+        margin-top: auto;
+    }
+
+    .mobile-nav-btn {
+        flex: 1;
+        min-height: 44px;
+        padding: 0.5rem;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        font-size: 0.95rem;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .mobile-nav-btn:active {
+        background-color: #45a049;
+        transform: scale(0.98);
+    }
+
+    .mobile-nav-btn:hover {
+        background-color: #45a049;
+    }
+}
+

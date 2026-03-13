@@ -141,6 +141,27 @@ function _add_mobile_interactions() {
   const t = $('#thetext');
   t.on('touchstart', '.word', touch_started);
   t.on('touchend', '.word', touch_ended);
+  
+  // Enhanced mobile interactions for better UX
+  t.on('touchstart', '.word', function(e) {
+    $(this).addClass('touch-active');
+  });
+  
+  t.on('touchend', '.word', function(e) {
+    $(this).removeClass('touch-active');
+  });
+  
+  // Show mobile bottom navigation when dictionary is open
+  const mediaTablet = window.matchMedia("(max-width: 980px)");
+  if (mediaTablet.matches) {
+    const readPaneRight = document.getElementById("read_pane_right");
+    if (readPaneRight && readPaneRight.classList.contains('open-dict')) {
+      const mobileNav = document.getElementById('mobile-bottom-nav');
+      if (mobileNav) {
+        mobileNav.style.display = 'flex';
+      }
+    }
+  }
 }
 
 
