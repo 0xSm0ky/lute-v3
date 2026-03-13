@@ -190,7 +190,7 @@ let tooltip_textitem_hover_content = function (el, setContent) {
 /** Showing the edit form. */
 
 function _show_wordframe_url(url) {
-  top.frames.wordframe.location.href = url;
+  window.frames.wordframe.location.href = url;
   applyInitialPaneSizes();  // in resize.js
 }
 
@@ -202,7 +202,7 @@ function show_term_edit_form(el) {
 function show_bulk_term_edit_form(count_of_terms) {
   const url = '/read/term_bulk_edit_form';
 
-  const wordFrame = top.frames.wordframe;
+  const wordFrame = window.frames.wordframe;
 
   function updateSpanContent() {
     const frameDocument = wordFrame.document;
@@ -229,7 +229,7 @@ function _hide_term_edit_form() {
   // causes security errors in some cases.
   /*
   const hide_me = ['read/edit_term', 'read/term_bulk_edit_form', 'read/termform'];
-  const c = top.frames.wordframe.location.href;
+  const c = window.frames.wordframe.location.href;
   if (hide_me.some(path => c.includes(path))) {
     $('#wordframeid').attr('src', '/read/empty');
   }
@@ -840,7 +840,7 @@ let show_translation_for_text = function(text) {
     window.open(finalurl, 'dictwin', settings);
   }
   else {
-    top.frames.wordframe.location.href = url;
+    window.frames.wordframe.location.href = url;
     $('#read_pane_right').css('grid-template-rows', '1fr 0');
   }
 
@@ -1083,7 +1083,7 @@ function handle_keydown (e) {
  */
 function update_term_form(el, new_status) {
   const sel = 'input[name="status"][value="' + new_status + '"]';
-  var radioButton = top.frames.wordframe.document.querySelector(sel);
+  var radioButton = window.frames.wordframe.document.querySelector(sel);
   if (radioButton) {
     radioButton.click();
   }
