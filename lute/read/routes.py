@@ -207,6 +207,12 @@ def term_form(langid, text):
     """
     Create a multiword term for the given text, replacing the LUTESLASH hack.
     """
+    # Decode the text parameter twice to handle double-encoding from the client
+    import urllib.parse
+    try:
+        text = urllib.parse.unquote(text)
+    except:
+        pass
     usetext = text.replace("LUTESLASH", "/")
     repo = Repository(db.session)
     term = repo.find_or_new(langid, usetext)

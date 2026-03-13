@@ -246,7 +246,9 @@ function show_multiword_term_edit_form(selected) {
   const lid = parseInt(selected.eq(0).data('lang-id'));
   // "/" in the term cause problems with routing, so hack a fix.
   const sendtext = text.replace(/\//g, "LUTESLASH");
-  _show_wordframe_url(`/read/termform/${lid}/${sendtext}`);
+  // Double-encode the URL parameter to prevent Apache from decoding it improperly
+  const doubleEncoded = encodeURIComponent(encodeURIComponent(sendtext));
+  _show_wordframe_url(`/read/termform/${lid}/${doubleEncoded}`);
 }
 
 
