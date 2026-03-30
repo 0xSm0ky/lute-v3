@@ -670,6 +670,37 @@ let handle_copy = function(span_attribute) {
   copy_text_to_clipboard(tis);
 }
 
+/** Copy only the current word to the clipboard. */
+let handle_copy_word = function() {
+  // Get the current hovered or marked element
+  let elements = $('span.kwordmarked, span.newmultiterm, span.wordhover');
+  if (elements.length === 0)
+    return;
+  
+  // Copy only the first element (the current word)
+  const current_word_element = elements.first();
+  const current_word = current_word_element.text();
+  if (current_word == '')
+    return;
+
+  var textArea = document.createElement("textarea");
+  textArea.value = current_word;
+  document.body.appendChild(textArea);
+  textArea.select();
+  document.execCommand("Copy");
+  textArea.remove();
+
+  // Flash animation
+  const removeFlash = function() {
+    current_word_element.addClass('wascopied');
+    current_word_element.removeClass('flashtextcopy');
+  };
+
+  removeFlash();
+  current_word_element.addClass('flashtextcopy');
+  setTimeout(() => removeFlash(), 1000);
+}
+
 /** Get the text from the text items, adding "\n" between paragraphs. */
 let _get_textitems_text = function(textitemspans) {
   if (textitemspans.length == 0)
@@ -1061,6 +1092,7 @@ function handle_keydown (e) {
     "hotkey_PageTermList": () => open_term_list_for_current_page(),
     "hotkey_PostTermsToAnki": () => send_selected_terms_to_anki(),
     "hotkey_Bookmark": () => handle_bookmark(),
+    "hotkey_CopyWord": () => handle_copy_word(),
     "hotkey_CopySentence": () => handle_copy('sentence-id'),
     "hotkey_CopyPara": () => handle_copy('paragraph-id'),
     "hotkey_CopyPage": () => handle_copy(null),

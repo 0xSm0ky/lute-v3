@@ -9,6 +9,8 @@ import yaml
 # Hotkeys and descriptions.
 _ALL_HOTKEY_DATA = """
 Copy:
+- hotkey: hotkey_CopyWord
+  desc: Copy the current word only
 - hotkey: hotkey_CopySentence
   desc: Copy the sentence of the current word
 - hotkey: hotkey_CopyPara
