@@ -51,18 +51,17 @@ class Service:
         sorted_themes = sorted(themes, key=lambda x: x[1])
         return [default_entry] + sorted_themes
 
-    def get_current_css(self):
+    def get_theme_css(self, theme_name):
         """
-        Return the current css pointed at by the current_theme user setting.
+        Return the css for an arbitrary theme name, or '' for the default.
+        Reads from the built-in css path and the user themes path, like
+        get_current_css does.
         """
-        repo = UserSettingRepository(self.session)
-        current_theme = repo.get_value("current_theme")
-        if current_theme == default_entry[0]:
+        if theme_name is None or theme_name == default_entry[0]:
             return ""
 
         def _get_theme_css_in_dir(d):
-            "Get css, or '' if no file."
-            fname = os.path.join(d, current_theme)
+            fname = os.path.join(d, theme_name)
             if not os.path.exists(fname):
                 return ""
             with open(fname, "r", encoding="utf-8") as f:
@@ -73,6 +72,13 @@ class Service:
         if add != "":
             ret += f"\n\n/* Additional user css */\n\n{add}"
         return ret
+
+    def get_current_css(self):
+        """
+        Return the current css pointed at by the current_theme user setting.
+        """
+        repo = UserSettingRepository(self.session)
+        return self.get_theme_css(repo.get_value("current_theme"))
 
     def next_theme(self):
         """

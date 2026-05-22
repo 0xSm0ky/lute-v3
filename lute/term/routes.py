@@ -276,7 +276,7 @@ def handle_term_form(
         duplicated_term=form.duplicated_term,
         language_dicts=language_repo.all_dictionaries(),
         hide_pronunciation=hide_pronunciation,
-        tags=repo.get_term_tags(),
+        tags=repo.get_term_tags_with_counts(term.language_id),
         embedded_in_reading_frame=embedded_in_reading_frame,
     )
 

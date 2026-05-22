@@ -61,6 +61,19 @@ BEGIN
 END;
 
 
+DROP TRIGGER IF EXISTS trig_words_log_status_change;
+
+CREATE TRIGGER trig_words_log_status_change
+-- created by db/schema/migrations_repeatable/trig_words.sql
+AFTER UPDATE OF WoStatus ON words
+FOR EACH ROW
+WHEN old.WoStatus <> new.WoStatus
+BEGIN
+    INSERT INTO wordstatuslog (WslWoID, WslLgID, WslOldStatus, WslNewStatus, WslChangedDate)
+    VALUES (NEW.WoID, NEW.WoLgID, OLD.WoStatus, NEW.WoStatus, CURRENT_TIMESTAMP);
+END;
+
+
 DROP TRIGGER IF EXISTS trig_word_after_delete_change_WoSyncStatus_for_orphans;
 
 CREATE TRIGGER trig_word_after_delete_change_WoSyncStatus_for_orphans

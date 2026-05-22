@@ -52,6 +52,7 @@ class Book(
     audio_filename = db.Column("BkAudioFilename", db.String)
     audio_current_pos = db.Column("BkAudioCurrentPos", db.Float)
     audio_bookmarks = db.Column("BkAudioBookmarks", db.String)
+    rating = db.Column("BkRating", db.SmallInteger, nullable=True)
 
     language = db.relationship("Language")
     texts = db.relationship(
@@ -282,6 +283,41 @@ class WordsRead(db.Model):
         self.language_id = text.book.language.id
         self.read_date = read_date
         self.word_count = word_count
+
+
+class ReadingSession(db.Model):
+    """
+    Tracks a single page-read session: opened at start_date, marked
+    read at end_date.  Inserted alongside WordsRead in
+    lute.read.service.Service.mark_page_read.
+    """
+
+    __tablename__ = "readingsessions"
+    id = db.Column("RsID", db.Integer, primary_key=True)
+    tx_id = db.Column(
+        "RsTxID",
+        db.Integer,
+        db.ForeignKey("texts.TxID", ondelete="SET NULL"),
+        nullable=True,
+    )
+    language_id = db.Column(
+        "RsLgID", db.Integer, db.ForeignKey("languages.LgID"), nullable=False
+    )
+    start_date = db.Column("RsStartDate", db.DateTime, nullable=True)
+    end_date = db.Column("RsEndDate", db.DateTime, nullable=False)
+    word_count = db.Column("RsWordCount", db.Integer, nullable=False)
+    duration_sec = db.Column("RsDurationSec", db.Integer, nullable=True)
+
+    def __init__(self, text, start_date, end_date, word_count):
+        self.tx_id = text.id
+        self.language_id = text.book.language.id
+        self.start_date = start_date
+        self.end_date = end_date
+        self.word_count = word_count
+        if start_date is not None and end_date is not None:
+            delta = end_date - start_date
+            sec = int(delta.total_seconds())
+            self.duration_sec = sec if sec >= 0 else None
 
 
 class Sentence(db.Model):

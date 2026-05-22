@@ -4,7 +4,7 @@ Settings form.
 
 import os
 from flask_wtf import FlaskForm
-from wtforms import BooleanField, StringField, IntegerField, TextAreaField, SelectField
+from wtforms import BooleanField, StringField, IntegerField, SelectField
 from wtforms.validators import InputRequired, NumberRange
 from wtforms import ValidationError
 
@@ -28,8 +28,6 @@ class UserSettingsForm(FlaskForm):
         },
     )
 
-    current_theme = SelectField("Theme")
-    custom_styles = TextAreaField("Custom styles")
     show_highlights = BooleanField("Highlight terms by status")
 
     open_popup_in_new_tab = BooleanField("Open popup in new tab")

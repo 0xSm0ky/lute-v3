@@ -192,7 +192,13 @@ function lute_tagify_utils_setup_term_tag_tagify(
     delimiters: ';;', // special delim to handle tags w/ commas
     editTags: false,
     autoComplete: { enabled: true, rightKey: true, tabKey: true },
-    dropdown: { enabled: 1 },
+    dropdown: {
+      enabled: 0,             // open on focus, before any keystroke
+      maxItems: 50,
+      position: 'all',
+      closeOnSelect: false,
+      highlightFirst: true,
+    },
     enforceWhitelist: false,
     whitelist: tags,
   };

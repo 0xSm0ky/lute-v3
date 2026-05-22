@@ -43,33 +43,9 @@
     </tr>
 
     <tr>
+      <td>Theme &amp; custom styles</td>
       <td>
-        {{ form.current_theme.label }}
-      </td>
-      <td>
-        {{ form.current_theme }}
-      </td>
-    </tr>
-    <tr>
-      <td>
-        {{ form.custom_styles.label }}
-        <img
-          id="about_custom_styles" style="margin-right:10px;"
-          src="{{ url_for('static', filename='icn/question-balloon.png') }}"
-          title="Click for details"
-          onclick="$('#custom_styles_help').toggle();"
-          />
-        <blockquote id="custom_styles_help" style="width:60%; display: none;">
-          <p>Use this field to define custom styles to be applied to
-          Lute.</p>
-          <p>See examples
-          in <a href="https://luteorg.github.io/lute-manual/usage/themes/custom-styles.html"
-          target="_blank">the manual</a>.</p>
-        </blockquote>
-      </td>
-      </td>
-      <td>
-        {{ form.custom_styles(class="form-largetextarea") }}
+        <a href="/theme/">Open theme picker →</a>
       </td>
     </tr>
     <tr>

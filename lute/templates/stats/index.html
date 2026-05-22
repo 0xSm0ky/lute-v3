@@ -9,11 +9,154 @@
 <script type="text/javascript" src="{{ url_for('static', filename='vendor/chartjs/chart.umd.js') }}" charset="utf-8"></script>
 <script type="text/javascript" src="{{ url_for('static', filename='vendor/chartjs/chartjs-adapter-date-fns.js') }}" charset="utf-8"></script>
 
+<style>
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin: 12px 0;
+  }
+  .stats-tile {
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 10px 12px;
+    background: #fafafa;
+  }
+  .stats-tile .label {
+    font-size: 12px;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .stats-tile .value {
+    font-size: 22px;
+    font-weight: 600;
+    margin-top: 4px;
+  }
+  .stats-tile .sub {
+    font-size: 11px;
+    color: #888;
+    margin-top: 2px;
+  }
+  .stats-lang-section {
+    margin: 32px 0;
+    padding: 16px;
+    border: 1px solid #e5e5e5;
+    border-radius: 8px;
+  }
+  .stats-lang-section > h2 {
+    margin-top: 0;
+  }
+  .stats-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin: 16px 0;
+  }
+  .stats-row > div {
+    min-width: 0;
+  }
+  @media (max-width: 800px) {
+    .stats-row { grid-template-columns: 1fr; }
+  }
+  .stats-chart-container {
+    position: relative;
+    aspect-ratio: 2;
+    width: 100%;
+  }
+  .range-toggle button {
+    margin-right: 4px;
+    padding: 2px 8px;
+    border: 1px solid #bbb;
+    background: #f5f5f5;
+    cursor: pointer;
+    border-radius: 3px;
+    font-size: 12px;
+  }
+  .range-toggle button.active {
+    background: #4a7cbf;
+    color: white;
+    border-color: #4a7cbf;
+  }
+  .stats-heatmap {
+    border-collapse: collapse;
+    margin: 8px 0;
+  }
+  .stats-heatmap td {
+    width: 10px;
+    height: 10px;
+    border: 1px solid #fff;
+    background: #ebedf0;
+  }
+  .stats-heatmap .month-label {
+    font-size: 10px;
+    color: #666;
+    text-align: left;
+    padding-right: 4px;
+    border: none;
+    background: transparent;
+  }
+  .stats-language-summary {
+    border-collapse: collapse;
+    margin: 8px 0 24px 0;
+  }
+  .stats-language-summary th,
+  .stats-language-summary td {
+    border: 1px solid #ddd;
+    padding: 4px 10px;
+    text-align: right;
+  }
+  .stats-language-summary th:first-child,
+  .stats-language-summary td:first-child {
+    text-align: left;
+  }
+  .stats-language-summary th {
+    background: #f0f0f0;
+  }
+  table.statsWordsRead {
+    border-collapse: collapse;
+    margin: 8px 0;
+  }
+  table.statsWordsRead th,
+  table.statsWordsRead td {
+    border: 1px solid #ddd;
+    padding: 4px 10px;
+    text-align: right;
+  }
+  table.statsWordsRead th:first-child,
+  table.statsWordsRead td:first-child {
+    text-align: left;
+  }
+  .milestone-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: #f5f5f5;
+    margin: 4px 0;
+    font-size: 13px;
+  }
+  .transition-grid {
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  .transition-grid th, .transition-grid td {
+    border: 1px solid #ddd;
+    padding: 3px 6px;
+    text-align: center;
+    min-width: 30px;
+  }
+  .transition-grid td.has-count {
+    background: #e6f0ff;
+    font-weight: 600;
+  }
+</style>
+
 <h2>Words read</h2>
 
 <table class="statsWordsRead">
   <tr>
-    <th />
+    <th></th>
     <th>today</th>
     <th>last week</th>
     <th>last month</th>
@@ -30,128 +173,474 @@
     <td>{{ lang.counts.total }}</td>
   </tr>
   {% endfor %}
-</ul>
 </table>
 
-<div style="position: relative; aspect-ratio: 3">
+<div class="stats-chart-container" style="aspect-ratio: 3">
   <canvas id="wordCountChart"></canvas>
 </div>
 
+<h2>Language term summary</h2>
+
+<table class="stats-language-summary">
+  <thead>
+    <tr>
+      <th>Language</th>
+      <th>Total</th>
+      {% for status_id, label in status_labels.items() %}
+      <th title="status {{ status_id }}">{{ label }}</th>
+      {% endfor %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in language_summary %}
+    <tr>
+      <td>{{ row.name }}</td>
+      <td>{{ row.total }}</td>
+      {% for status_id in status_labels.keys() %}
+      <td>{{ row.by_status[status_id] }}</td>
+      {% endfor %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% for lang in languages %}
+<section class="stats-lang-section" data-lang-id="{{ lang.id }}" data-lang-name="{{ lang.name }}">
+  <h2>{{ lang.name }}</h2>
+
+  <!-- A: Today + streaks + milestones + heatmap -->
+  <div class="stats-grid" data-role="today-tiles">
+    <div class="stats-tile"><div class="label">Words today</div><div class="value" data-stat="words_today">—</div></div>
+    <div class="stats-tile"><div class="label">Pages today</div><div class="value" data-stat="pages_today">—</div></div>
+    <div class="stats-tile"><div class="label">Minutes today</div><div class="value" data-stat="minutes_today">—</div></div>
+    <div class="stats-tile"><div class="label">New terms today</div><div class="value" data-stat="new_terms_today">—</div></div>
+    <div class="stats-tile"><div class="label">Status changes today</div><div class="value" data-stat="status_changes_today">—</div></div>
+    <div class="stats-tile"><div class="label">Current streak</div><div class="value" data-stat="streak_current">—</div><div class="sub" data-stat="streak_longest"></div></div>
+    <div class="stats-tile"><div class="label">Best day</div><div class="value" data-stat="best_day">—</div><div class="sub">words</div></div>
+    <div class="stats-tile"><div class="label">Best 7-day window</div><div class="value" data-stat="best_week">—</div><div class="sub">words</div></div>
+    <div class="stats-tile"><div class="label">Days studied (month)</div><div class="value" data-stat="days_this_month">—</div></div>
+    <div class="stats-tile"><div class="label">Days studied (year)</div><div class="value" data-stat="days_this_year">—</div></div>
+  </div>
+
+  <div class="stats-row">
+    <div>
+      <h3>Reading milestones</h3>
+      <div data-role="milestones"></div>
+    </div>
+    <div>
+      <h3>Reading heatmap</h3>
+      <div data-role="heatmap"></div>
+    </div>
+  </div>
+
+  <!-- B: Daily reading + hourly breakdown -->
+  <div class="stats-row">
+    <div>
+      <h3>Daily reading
+        <span class="range-toggle" data-toggle-for="daily">
+          <button data-range="1m">1m</button>
+          <button data-range="3m" class="active">3m</button>
+          <button data-range="1y">1y</button>
+          <button data-range="all">all</button>
+        </span>
+      </h3>
+      <div class="stats-chart-container"><canvas data-chart="daily"></canvas></div>
+    </div>
+    <div>
+      <h3>Hourly breakdown
+        <span class="range-toggle" data-toggle-for="hourly">
+          <button data-range="1m">1m</button>
+          <button data-range="3m" class="active">3m</button>
+          <button data-range="1y">1y</button>
+          <button data-range="all">all</button>
+        </span>
+      </h3>
+      <div class="stats-chart-container"><canvas data-chart="hourly"></canvas></div>
+    </div>
+  </div>
+
+  <!-- C: Status distribution + new terms -->
+  <div class="stats-row">
+    <div>
+      <h3>Term status distribution</h3>
+      <div class="stats-chart-container"><canvas data-chart="status"></canvas></div>
+    </div>
+    <div>
+      <h3>New terms added
+        <span class="range-toggle" data-toggle-for="new_terms">
+          <button data-range="1m">1m</button>
+          <button data-range="3m" class="active">3m</button>
+          <button data-range="1y">1y</button>
+          <button data-range="all">all</button>
+        </span>
+      </h3>
+      <div class="stats-chart-container"><canvas data-chart="new_terms"></canvas></div>
+    </div>
+  </div>
+
+  <!-- D: Terms by tag + status transitions -->
+  <div class="stats-row">
+    <div>
+      <h3>Terms by tag</h3>
+      <div class="stats-chart-container"><canvas data-chart="tags"></canvas></div>
+    </div>
+    <div>
+      <h3>Status transitions
+        <span class="range-toggle" data-toggle-for="transitions">
+          <button data-range="1m">1m</button>
+          <button data-range="3m" class="active">3m</button>
+          <button data-range="1y">1y</button>
+          <button data-range="all">all</button>
+        </span>
+      </h3>
+      <div data-role="transitions"></div>
+    </div>
+  </div>
+</section>
+{% endfor %}
+
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    fetch('/stats/data')
-      .then(response => response.json())
-      .then(data => {
-        renderChart(data);
-      });
+// ---------------------------------------------------------------------------
+// Existing chart: per-language cumulative line graph from /stats/data.
+// ---------------------------------------------------------------------------
+document.addEventListener('DOMContentLoaded', function () {
+  fetch('/stats/data')
+    .then(r => r.json())
+    .then(renderCumulativeChart);
+});
+
+function renderCumulativeChart(data) {
+  const el = document.getElementById('wordCountChart');
+  if (!el) return;
+  const datasets = [];
+  Object.entries(data).forEach(([lang, points]) => {
+    const series = {
+      label: lang,
+      yAxisID: 'total',
+      data: [],
+      borderWidth: 2,
+      type: 'line',
+      pointRadius: 0,
+    };
+    points.forEach(p => series.data.push({ x: p.readdate, y: p.runningTotal }));
+    datasets.push(series);
+  });
+  new Chart(el.getContext('2d'), {
+    type: 'bar',
+    data: { datasets },
+    options: {
+      maintainAspectRatio: false,
+      scales: {
+        x: { type: 'time', display: true, time: { unit: 'day' }, title: { display: true, text: 'Date' } },
+        total: { position: 'right', title: { display: true, text: 'total' }, ticks: { beginAtZero: true } }
+      }
+    }
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Per-language sections.
+// ---------------------------------------------------------------------------
+const STATUS_LABELS = {{ status_labels | tojson }};
+const STATUS_COLORS = {
+  '0': '#cccccc',
+  '1': '#ffd6d6',
+  '2': '#ffb3b3',
+  '3': '#ffe0a8',
+  '4': '#fff3a8',
+  '5': '#d8f0c8',
+  '98': '#888888',
+  '99': '#7ec97e',
+};
+
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('.stats-lang-section').forEach(initLangSection);
+});
+
+function initLangSection(section) {
+  const langId = section.dataset.langId;
+  const charts = {};
+
+  // Today + streaks + milestones + heatmap.
+  fetch(`/stats/today/${langId}`).then(r => r.json()).then(today => {
+    setStat(section, 'words_today', today.words_today);
+    setStat(section, 'pages_today', today.pages_today);
+    setStat(section, 'minutes_today', Math.round((today.seconds_today || 0) / 60));
+    setStat(section, 'new_terms_today', today.new_terms_today);
+    setStat(section, 'status_changes_today', today.status_changes_today);
+    setStat(section, 'best_day', today.best_day);
+    setStat(section, 'best_week', today.best_week);
+    setStat(section, 'days_this_month', today.days_this_month);
+    setStat(section, 'days_this_year', today.days_this_year);
   });
 
-  function renderChart(data) {
-    var ctx = document.getElementById('wordCountChart').getContext('2d');
+  fetch(`/stats/streaks/${langId}`).then(r => r.json()).then(s => {
+    setStat(section, 'streak_current', `${s.current} 🔥`);
+    const longestEl = section.querySelector('[data-stat="streak_longest"]');
+    if (longestEl) longestEl.textContent = `longest: ${s.longest}`;
+  });
 
-    datasets = [];
-
-    Object.entries(data).forEach(entry => {
-      const [langname, langdata] = entry;
-
-      var daily = {
-        label: `${langname}`,
-        yAxisID: 'daily',
-        data: [],
-        borderWidth: 1,
-        type: 'bar',  // Bar chart for daily count
-      };
-
-      var total = {
-        label: `${langname}`,
-        yAxisID: 'total',
-        data: [],
-        borderWidth: 2,
-        type: 'line',  // Line chart for running total
-        pointRadius: 0,
-      };
-
-      langdata.forEach(item => {
-        // daily.data.push({x: item.readdate, y: item.wordcount});
-        total.data.push({x: item.readdate, y: item.runningTotal});
-      });
-
-      // datasets.push(daily);
-      datasets.push(total);
+  fetch(`/stats/milestones/${langId}`).then(r => r.json()).then(m => {
+    const host = section.querySelector('[data-role="milestones"]');
+    host.innerHTML = '';
+    [['1,000+ words', m.days_1k], ['5,000+ words', m.days_5k], ['10,000+ words', m.days_10k]].forEach(([label, n]) => {
+      const row = document.createElement('div');
+      row.className = 'milestone-row';
+      row.innerHTML = `<span>${label}</span><span><b>${n}</b> days</span>`;
+      host.appendChild(row);
     });
+  });
 
-    var chart = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        datasets: datasets
-      },
-      options: {
-        maintainAspectRatio: false,
-        scales: {
-          // Unable to get the "time" scale working correctly,
-          // so now the data just has all of the dates.
-          x: {
-            type: 'time',
-            display: true,
-            time: {
-              unit: 'day'
-            },
-            title: {
-              display: true,
-              text: 'Date'
-            },
-            ticks: {
-              major: {
-                enabled: true
-              },
-              color: (context) => context.tick && context.tick.major && '#FF0000',
-              font: function(context) {
-                if (context.tick && context.tick.major) {
-                  return {
-                    weight: 'bold'
-                  };
-                }
-              }
-            }
-          },
-          /*
-          daily: {
-            position: 'left',
-            title: {
-              display: true,
-              text: 'daily',
-            },
-            grid: {
-              display: false
-            },
-            ticks: {
-              beginAtZero: true,
-              callback: function(value) {
-                return value.toLocaleString(); // Format y-axis labels
-              }
-            }
-            },
-            */
-          total: {
-            position: 'right',
-            title: {
-              display: true,
-              text: 'total',
-            },
-            grid: {
-              display: false
-            },
-            ticks: {
-              beginAtZero: true,
-              callback: function(value) {
-                return value.toLocaleString(); // Format y-axis labels
-              }
-            }
-          },
-        }
+  const year = new Date().getFullYear();
+  fetch(`/stats/heatmap/${langId}/${year}`).then(r => r.json()).then(map => {
+    renderHeatmap(section.querySelector('[data-role="heatmap"]'), map, year);
+  });
+
+  // Charts that respect range toggle.
+  setupRangeChart(section, langId, 'daily', '3m', (canvas, data) => renderDailyChart(canvas, data, charts));
+  setupRangeChart(section, langId, 'hourly', '3m', (canvas, data) => renderHourlyChart(canvas, data, charts));
+  setupRangeChart(section, langId, 'new_terms', '3m', (canvas, data) => renderNewTermsChart(canvas, data, charts));
+  setupRangeChart(section, langId, 'transitions', '3m', (host, data) => renderTransitions(section, data));
+
+  // Charts that don't have a range toggle.
+  fetch(`/stats/status_distribution/${langId}`).then(r => r.json()).then(d => {
+    renderStatusChart(section.querySelector('[data-chart="status"]'), d, charts);
+  });
+  fetch(`/stats/terms_by_tag/${langId}`).then(r => r.json()).then(d => {
+    renderTagsChart(section.querySelector('[data-chart="tags"]'), d, charts);
+  });
+}
+
+function setStat(section, name, value) {
+  const el = section.querySelector(`[data-stat="${name}"]`);
+  if (el) el.textContent = (value === null || value === undefined) ? '—' : value;
+}
+
+function setupRangeChart(section, langId, chartName, defaultRange, render) {
+  const toggle = section.querySelector(`[data-toggle-for="${chartName}"]`);
+  if (!toggle) return;
+
+  const endpointMap = {
+    daily: 'daily',
+    hourly: 'hourly',
+    new_terms: 'new_terms',
+    transitions: 'transitions',
+  };
+  const endpoint = endpointMap[chartName];
+
+  const load = (rng) => {
+    fetch(`/stats/${endpoint}/${langId}/${rng}`).then(r => r.json()).then(data => {
+      let target;
+      if (chartName === 'transitions') {
+        target = section.querySelector('[data-role="transitions"]');
+      } else {
+        target = section.querySelector(`[data-chart="${chartName}"]`);
       }
+      render(target, data);
     });
+  };
+
+  toggle.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      toggle.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      load(btn.dataset.range);
+    });
+  });
+  load(defaultRange);
+}
+
+// ---------------------------------------------------------------------------
+// Chart renderers.
+// ---------------------------------------------------------------------------
+
+function renderDailyChart(canvas, data, charts) {
+  const key = canvas.id || (canvas.id = `c${Math.random().toString(36).slice(2)}`);
+  if (charts[key]) charts[key].destroy();
+  const labels = data.map(d => d.date);
+  const words = data.map(d => d.words);
+  charts[key] = new Chart(canvas.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'words', data: words, backgroundColor: '#4a7cbf' },
+      ],
+    },
+    options: {
+      maintainAspectRatio: false,
+      scales: { y: { beginAtZero: true } },
+    },
+  });
+}
+
+function renderHourlyChart(canvas, buckets, charts) {
+  const key = canvas.id || (canvas.id = `c${Math.random().toString(36).slice(2)}`);
+  if (charts[key]) charts[key].destroy();
+  charts[key] = new Chart(canvas.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: Array.from({ length: 24 }, (_, i) => `${i}h`),
+      datasets: [{ label: 'words', data: buckets, backgroundColor: '#7aa9d6' }],
+    },
+    options: {
+      maintainAspectRatio: false,
+      scales: { y: { beginAtZero: true } },
+    },
+  });
+}
+
+function renderStatusChart(canvas, payload, charts) {
+  const key = canvas.id || (canvas.id = `c${Math.random().toString(36).slice(2)}`);
+  if (charts[key]) charts[key].destroy();
+  const counts = payload.counts || {};
+  const labels = [];
+  const values = [];
+  const colors = [];
+  Object.keys(STATUS_LABELS).forEach(sid => {
+    const cnt = counts[sid] || 0;
+    if (cnt > 0) {
+      labels.push(STATUS_LABELS[sid]);
+      values.push(cnt);
+      colors.push(STATUS_COLORS[sid] || '#aaa');
+    }
+  });
+  charts[key] = new Chart(canvas.getContext('2d'), {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data: values, backgroundColor: colors }] },
+    options: { maintainAspectRatio: false },
+  });
+}
+
+function renderNewTermsChart(canvas, data, charts) {
+  const key = canvas.id || (canvas.id = `c${Math.random().toString(36).slice(2)}`);
+  if (charts[key]) charts[key].destroy();
+  charts[key] = new Chart(canvas.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: data.map(d => d.date),
+      datasets: [{ label: 'new terms', data: data.map(d => d.count), backgroundColor: '#7ec97e' }],
+    },
+    options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true } } },
+  });
+}
+
+function renderTagsChart(canvas, tags, charts) {
+  const key = canvas.id || (canvas.id = `c${Math.random().toString(36).slice(2)}`);
+  if (charts[key]) charts[key].destroy();
+  if (!tags.length) {
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#888';
+    ctx.font = '14px sans-serif';
+    ctx.fillText('No tagged terms.', 10, 20);
+    return;
   }
+  const labels = tags.map(t => t.text);
+  const datasets = Object.keys(STATUS_LABELS).map(sid => ({
+    label: STATUS_LABELS[sid],
+    data: tags.map(t => t.by_status[sid] || 0),
+    backgroundColor: STATUS_COLORS[sid] || '#aaa',
+    stack: 'tags',
+  }));
+  charts[key] = new Chart(canvas.getContext('2d'), {
+    type: 'bar',
+    data: { labels, datasets },
+    options: {
+      indexAxis: 'y',
+      maintainAspectRatio: false,
+      scales: { x: { stacked: true, beginAtZero: true }, y: { stacked: true } },
+    },
+  });
+}
+
+function renderTransitions(section, rows) {
+  const host = section.querySelector('[data-role="transitions"]');
+  host.innerHTML = '';
+  if (!rows.length) {
+    host.textContent = 'No status changes yet in this range.';
+    return;
+  }
+  // Build a from/to grid using only statuses that actually appear, plus 0/99.
+  const statusSet = new Set();
+  rows.forEach(r => { statusSet.add(r.from); statusSet.add(r.to); });
+  const statuses = Array.from(statusSet).sort((a, b) => a - b);
+  const map = {};
+  rows.forEach(r => { map[`${r.from}->${r.to}`] = r.count; });
+  const table = document.createElement('table');
+  table.className = 'transition-grid';
+  let html = '<thead><tr><th>from \\ to</th>';
+  statuses.forEach(s => { html += `<th>${STATUS_LABELS[String(s)] || s}</th>`; });
+  html += '</tr></thead><tbody>';
+  statuses.forEach(from => {
+    html += `<tr><th>${STATUS_LABELS[String(from)] || from}</th>`;
+    statuses.forEach(to => {
+      const n = map[`${from}->${to}`] || 0;
+      html += `<td class="${n > 0 ? 'has-count' : ''}">${n || ''}</td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</tbody>';
+  table.innerHTML = html;
+  host.appendChild(table);
+}
+
+function renderHeatmap(host, map, year) {
+  host.innerHTML = '';
+  const start = new Date(year, 0, 1);
+  const end = new Date(year, 11, 31);
+  // Snap start back to Sunday.
+  const startCursor = new Date(start);
+  startCursor.setDate(startCursor.getDate() - startCursor.getDay());
+  // Find max for color scaling.
+  let max = 0;
+  Object.values(map).forEach(v => { if (v > max) max = v; });
+  // Build 7 rows × N week-columns.
+  const days = [];
+  for (let d = new Date(startCursor); d <= end; d.setDate(d.getDate() + 1)) {
+    days.push(new Date(d));
+  }
+  const weeks = Math.ceil(days.length / 7);
+  const table = document.createElement('table');
+  table.className = 'stats-heatmap';
+  for (let row = 0; row < 7; row++) {
+    const tr = document.createElement('tr');
+    for (let col = 0; col < weeks; col++) {
+      const idx = col * 7 + row;
+      const d = days[idx];
+      const td = document.createElement('td');
+      if (d && d.getFullYear() === year) {
+        const key = isoDate(d);
+        const v = map[key] || 0;
+        if (v > 0) {
+          const intensity = Math.min(1, v / Math.max(max, 1));
+          td.style.background = shade(intensity);
+        }
+        td.title = `${key}: ${v} words`;
+      } else {
+        td.style.background = 'transparent';
+        td.style.border = 'none';
+      }
+      tr.appendChild(td);
+    }
+    table.appendChild(tr);
+  }
+  host.appendChild(table);
+}
+
+function shade(intensity) {
+  // Light → dark green.
+  const start = [235, 237, 240];
+  const end = [44, 122, 44];
+  const c = start.map((s, i) => Math.round(s + (end[i] - s) * intensity));
+  return `rgb(${c[0]}, ${c[1]}, ${c[2]})`;
+}
+
+function isoDate(d) {
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${m}-${day}`;
+}
 </script>
 
 {% endblock %}

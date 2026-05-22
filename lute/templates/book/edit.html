@@ -51,6 +51,34 @@
       <td>{{ form.book_tags(class="form-control") }}</td>
     </tr>
 
+    <tr>
+      <td>{{ form.rating.label }}</td>
+      <td>
+        {{ form.rating(type="hidden") }}
+        <span id="rating_widget" class="rating-stars" data-current="{{ form.rating.data or 0 }}">
+          <button type="button" data-value="1">☆</button><button
+            type="button" data-value="2">☆</button><button
+            type="button" data-value="3">☆</button><button
+            type="button" data-value="4">☆</button><button
+            type="button" data-value="5">☆</button>
+          <button type="button" id="rating_clear" title="Clear rating"
+                  style="margin-left:8px; font-size: 12px;">clear</button>
+        </span>
+        <style>
+          .rating-stars button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 22px;
+            padding: 0 2px;
+            color: #bbb;
+          }
+          .rating-stars button.active { color: #f5a623; }
+          .rating-stars button:hover { color: #f5a623; }
+        </style>
+      </td>
+    </tr>
+
   </tbody>
   </table>
 
@@ -77,7 +105,36 @@
   $(document).ready(function () {
     var tagslist = document.getElementById('book_tags');
     var tags_tagify = setup_book_tags_tagify(tagslist);
+    setup_rating_widget();
   });
+
+  function setup_rating_widget() {
+    const widget = document.getElementById('rating_widget');
+    if (!widget) return;
+    const hidden = document.getElementById('rating');
+    const buttons = widget.querySelectorAll('button[data-value]');
+    const paint = (v) => {
+      buttons.forEach(b => {
+        const val = parseInt(b.dataset.value, 10);
+        if (val <= v) { b.textContent = '★'; b.classList.add('active'); }
+        else { b.textContent = '☆'; b.classList.remove('active'); }
+      });
+    };
+    paint(parseInt(widget.dataset.current || '0', 10));
+    buttons.forEach(b => {
+      b.addEventListener('click', () => {
+        const v = parseInt(b.dataset.value, 10);
+        // Click on currently-selected star clears it.
+        const next = (parseInt(hidden.value || '0', 10) === v) ? 0 : v;
+        hidden.value = next;
+        paint(next);
+      });
+    });
+    document.getElementById('rating_clear').addEventListener('click', () => {
+      hidden.value = 0;
+      paint(0);
+    });
+  }
 
   function confirm_delete(el) {
     if (!confirm(`Deleting audio file.  Click OK to proceed, or Cancel.`)) {

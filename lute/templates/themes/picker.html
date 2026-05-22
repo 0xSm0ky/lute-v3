@@ -1,0 +1,172 @@
+{% extends 'base.html' %}
+
+{% block title %}Themes{% endblock %}
+{% block header %}Themes{% endblock %}
+
+{% block body %}
+
+<style>
+  .theme-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin: 16px 0 32px 0;
+  }
+  .theme-card {
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    padding: 10px;
+    background: #fff;
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .theme-card:hover { border-color: #4a7cbf; }
+  .theme-card.active {
+    border-color: #2c7a2c;
+    box-shadow: 0 0 0 2px rgba(44, 122, 44, 0.2);
+  }
+  .theme-card .name {
+    font-weight: 600;
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .theme-card .name .badge {
+    font-size: 11px;
+    color: #2c7a2c;
+    font-weight: 500;
+  }
+  .theme-card iframe {
+    width: 100%;
+    height: 130px;
+    border: 1px solid #eee;
+    border-radius: 4px;
+    background: #fff;
+    pointer-events: none;
+  }
+  .custom-styles-block {
+    margin-top: 32px;
+  }
+  .custom-styles-block textarea {
+    width: 100%;
+    min-height: 220px;
+    font-family: monospace;
+    font-size: 13px;
+  }
+  #save_styles_result {
+    margin-left: 8px;
+    font-size: 13px;
+    color: #2c7a2c;
+  }
+</style>
+
+<p>
+  Pick a theme to apply it across Lute. Custom CSS below is layered on top of
+  the selected theme, so per-language tweaks (font, direction) belong there.
+</p>
+
+<div class="theme-grid" id="theme_grid">
+  {% for theme_file, theme_name in themes %}
+  <div class="theme-card{% if theme_file == current %} active{% endif %}"
+       data-theme="{{ theme_file }}">
+    <div class="name">
+      <span>{{ theme_name }}</span>
+      <span class="badge">{% if theme_file == current %}active{% endif %}</span>
+    </div>
+    {% if theme_file == '-' %}
+    <iframe srcdoc='<html><body style="margin:0;padding:8px;font-family:sans-serif;font-size:12px;color:#333">
+      <p>Lute&apos;s default appearance, no theme CSS applied.</p>
+      <p><span style="background:#ffe8c2">term1</span>
+         <span style="background:#ffd699">term2</span>
+         <span style="background:#c2ffc2">term5</span></p>
+    </body></html>'></iframe>
+    {% else %}
+    <iframe srcdoc='<html><head><link rel="stylesheet" href="/theme/preview/{{ theme_file }}"></head>
+      <body style="margin:0;padding:8px;font-family:sans-serif;font-size:12px">
+        <p>The quick brown fox jumps over the lazy dog.</p>
+        <p>
+          <span class="status1">word1</span>
+          <span class="status2">word2</span>
+          <span class="status3">word3</span>
+          <span class="status4">word4</span>
+          <span class="status5">word5</span>
+          <span class="status99">known</span>
+        </p>
+      </body></html>'></iframe>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+
+<div class="custom-styles-block">
+  <h2>Custom styles
+    <img id="custom_styles_help_toggle" style="margin-left:8px"
+         src="{{ url_for('static', filename='icn/question-balloon.png') }}"
+         title="Click for details"
+         onclick="$('#custom_styles_help').toggle();" />
+  </h2>
+  <blockquote id="custom_styles_help" style="display:none">
+    <p>Custom CSS layered on top of the selected theme. Common uses:</p>
+    <ul>
+      <li>Per-language fonts: target <code>span.textitem[data-lang-id="1"]</code> (Urdu Nastaliq, Arabic, etc).</li>
+      <li>Adjust line height, sizes, or RTL spacing.</li>
+    </ul>
+    <p>See the <a href="https://luteorg.github.io/lute-manual/usage/themes/custom-styles.html" target="_blank">manual</a>.</p>
+  </blockquote>
+  <textarea id="custom_styles">{{ custom_styles }}</textarea>
+  <div style="margin-top:8px">
+    <button id="save_styles" class="btn btn-primary">Save custom styles</button>
+    <span id="save_styles_result"></span>
+  </div>
+</div>
+
+<script>
+function reload_theme_links() {
+  // Re-fetch /theme/current and /theme/custom_styles in place so the user
+  // sees the new theme without a full page reload.
+  ['/theme/current', '/theme/custom_styles'].forEach(href => {
+    const link = document.querySelector(`link[href^="${href}"]`);
+    if (!link) return;
+    const fresh = link.cloneNode();
+    fresh.href = `${href}?t=${Date.now()}`;
+    link.parentNode.insertBefore(fresh, link);
+    setTimeout(() => link.remove(), 200);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.theme-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const theme = card.dataset.theme;
+      fetch(`/theme/apply/${encodeURIComponent(theme)}`, {method: 'POST'})
+        .then(r => r.json())
+        .then(data => {
+          if (!data.ok) return;
+          document.querySelectorAll('.theme-card').forEach(c => {
+            c.classList.toggle('active', c.dataset.theme === theme);
+            const badge = c.querySelector('.badge');
+            if (badge) badge.textContent = c.dataset.theme === theme ? 'active' : '';
+          });
+          reload_theme_links();
+        });
+    });
+  });
+
+  document.getElementById('save_styles').addEventListener('click', () => {
+    const css = document.getElementById('custom_styles').value;
+    const fd = new FormData();
+    fd.append('custom_styles', css);
+    fetch('/theme/custom_styles', {method: 'POST', body: fd})
+      .then(r => r.json())
+      .then(data => {
+        const el = document.getElementById('save_styles_result');
+        el.textContent = data.ok ? 'Saved.' : 'Error saving.';
+        reload_theme_links();
+        setTimeout(() => { el.textContent = ''; }, 2500);
+      });
+  });
+});
+</script>
+
+{% endblock %}

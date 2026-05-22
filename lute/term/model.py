@@ -246,6 +246,36 @@ class Repository:
         tags = self.session.query(TermTag).all()
         return sorted([t.text for t in tags])
 
+    def get_term_tags_with_counts(self, language_id=None):
+        """
+        Return tag texts ranked by usage count (descending), tie-broken
+        alphabetically.  If language_id is given, only counts tag usages
+        on terms in that language; when that yields zero, fall back to
+        the global ranking so the suggestion list is never empty for a
+        new language.
+        """
+
+        def _query(lang_id):
+            base = """
+                SELECT TgText, COUNT(WtWoID) AS cnt
+                FROM tags
+                LEFT JOIN wordtags ON WtTgID = TgID
+                LEFT JOIN words ON WoID = WtWoID
+            """
+            params = {}
+            where = ""
+            if lang_id is not None:
+                where = " WHERE WoLgID = :lg"
+                params["lg"] = int(lang_id)
+            sql = base + where + " GROUP BY TgID, TgText ORDER BY cnt DESC, TgText"
+            return self.session.execute(sqlalchemy.text(sql), params).fetchall()
+
+        rows = _query(language_id) if language_id is not None else _query(None)
+        # Fall back to global when language filter produces no usage.
+        if language_id is not None and not any(int(r[1]) for r in rows):
+            rows = _query(None)
+        return [r[0] for r in rows if r[0]]
+
     def add(self, term):
         """
         Add a term to be saved to the db session.

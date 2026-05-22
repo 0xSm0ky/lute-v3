@@ -6,7 +6,7 @@ from collections import defaultdict
 from datetime import datetime
 import functools
 from lute.models.term import Term, Status
-from lute.models.book import Text, WordsRead
+from lute.models.book import Text, WordsRead, ReadingSession
 from lute.models.repositories import BookRepository, UserSettingRepository
 from lute.book.stats import Service as StatsService
 from lute.read.render.service import Service as RenderService
@@ -86,11 +86,14 @@ class Service:
         book = br.find(bookid)
         text = book.text_at_page(pagenum)
         d = datetime.now()
+        start = text.start_date
         text.read_date = d
 
         w = WordsRead(text, d, text.word_count)
+        rs = ReadingSession(text, start, d, text.word_count)
         self.session.add(text)
         self.session.add(w)
+        self.session.add(rs)
         self.session.commit()
         if mark_rest_as_known:
             self.set_unknowns_to_known(text)

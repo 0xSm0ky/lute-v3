@@ -16,6 +16,7 @@
         <a href="/refresh_all_stats" class="refresh" title="Refresh stats for all books"></a>
       </th>
       <th style="text-align: left">Last read</th>
+      <th style="text-align: left">Rating</th>
       <th style="text-align: left">Actions</th>
     </tr>
   </thead>
@@ -118,6 +119,7 @@
         { name: "WordCount", width: "10%", data: "WordCount" },
         { name: "UnknownPercent", "searchable": false, render: render_book_stats_graph_placeholder },
         { name: "LastOpenedDate", "searchable": false, render: render_last_opened_date },
+        { name: "Rating", "searchable": false, render: render_rating },
         { width: "8%", "searchable": false, "orderable": false, render: render_book_actions },
       ],
       createdRow: function(row, data, dataIndex) { ajax_in_book_stats(row, data, dataIndex); },
@@ -306,6 +308,13 @@
     });
     ret += `</div>`;
     return ret;
+  };
+
+  let render_rating = function ( data, type, row, meta ) {
+    const r = row['Rating'];
+    if (r == null || r === 0) return '<span style="color:#bbb">—</span>';
+    const filled = parseInt(r, 10);
+    return `<span title="${filled}/5">${'★'.repeat(filled)}<span style="color:#bbb">${'★'.repeat(5 - filled)}</span></span>`;
   };
 
   let render_last_opened_date = function ( data, type, row, meta ) {

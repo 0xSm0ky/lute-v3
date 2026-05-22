@@ -6,7 +6,7 @@ import json
 from flask import request
 from wtforms import StringField, SelectField, TextAreaField, IntegerField, HiddenField
 from wtforms import ValidationError
-from wtforms.validators import DataRequired, Length, NumberRange
+from wtforms.validators import DataRequired, Length, NumberRange, Optional
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed
 
@@ -126,6 +126,11 @@ class EditBookForm(FlaskForm):
     # The current audio_filename can be removed from the current book.
     audio_filename = HiddenField("Audio filename")
 
+    rating = IntegerField(
+        "Rating",
+        validators=[Optional(), NumberRange(min=0, max=5)],
+    )
+
     def __init__(self, *args, **kwargs):
         "Call the constructor of the superclass (FlaskForm)"
         super().__init__(*args, **kwargs)
@@ -143,6 +148,8 @@ class EditBookForm(FlaskForm):
         "Call the populate_obj method from the parent class, then mine."
         super().populate_obj(obj)
         obj.book_tags = _tag_values(self.book_tags.data)
+        if self.rating.data == 0:
+            obj.rating = None
 
         afd = self.audiofile.data
         if afd:

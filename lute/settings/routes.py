@@ -15,7 +15,6 @@ from wtforms import BooleanField
 from lute.models.language import Language
 from lute.models.setting import UserSetting
 from lute.models.repositories import UserSettingRepository
-from lute.themes.service import Service as ThemeService
 from lute.settings.forms import UserSettingsForm, UserShortcutsForm
 from lute.settings.current import refresh_global_settings
 from lute.settings.hotkey_data import categorized_hotkeys, hotkey_descriptions
@@ -30,10 +29,6 @@ bp = Blueprint("settings", __name__, url_prefix="/settings")
 def edit_settings():
     "Edit settings."
     form = UserSettingsForm()
-
-    with current_app.app_context():
-        svc = ThemeService(db.session)
-        form.current_theme.choices = svc.list_themes()
 
     ac = current_app.env_config
     if ac.is_docker:

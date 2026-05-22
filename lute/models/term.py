@@ -321,3 +321,25 @@ class Status(db.Model):  # pylint: disable=too-few-public-methods
     id = db.Column("StID", db.SmallInteger, primary_key=True)
     text = db.Column("StText", db.String(250))
     abbreviation = db.Column("StAbbreviation", db.String(250))
+
+
+class WordStatusLog(db.Model):  # pylint: disable=too-few-public-methods
+    """
+    Read-only log of WoStatus changes.  Rows are written by the
+    trig_words_log_status_change SQL trigger
+    (db/schema/migrations_repeatable/trig_words.sql); app code only
+    reads from this table.
+    """
+
+    __tablename__ = "wordstatuslog"
+
+    id = db.Column("WslID", db.Integer, primary_key=True)
+    term_id = db.Column(
+        "WslWoID", db.Integer, db.ForeignKey("words.WoID"), nullable=False
+    )
+    language_id = db.Column(
+        "WslLgID", db.Integer, db.ForeignKey("languages.LgID"), nullable=False
+    )
+    old_status = db.Column("WslOldStatus", db.SmallInteger, nullable=False)
+    new_status = db.Column("WslNewStatus", db.SmallInteger, nullable=False)
+    changed_date = db.Column("WslChangedDate", db.DateTime, nullable=False)
